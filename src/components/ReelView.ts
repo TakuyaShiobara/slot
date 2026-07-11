@@ -14,9 +14,11 @@ const SPIN_SPEED = 0.62; // px/ms
  */
 export class ReelView {
   readonly reelIndex: ReelIndex;
+  private scene: Phaser.Scene;
   private images: Phaser.GameObjects.Image[] = [];
   private baseIndex = 0;
   private offset = 0;
+  private bounceOffset = 0;
   private state: ReelState = 'IDLE';
   private remainingRows = 0;
   private onStoppedCallback: (() => void) | null = null;
@@ -24,6 +26,7 @@ export class ReelView {
   private readonly visibleRows = 5; // 上下1コマずつ余裕を持たせてスクロール時のはみ出しを防ぐ
 
   constructor(scene: Phaser.Scene, reelIndex: ReelIndex, x: number, topY: number) {
+    this.scene = scene;
     this.reelIndex = reelIndex;
     this.topY = topY;
     this.baseIndex = Phaser.Math.Between(0, REEL_LENGTH - 1);
@@ -56,7 +59,7 @@ export class ReelView {
       const offsetFromMiddle = i - 2;
       const img = this.images[i];
       img.setTexture(this.symbolAt(offsetFromMiddle));
-      img.y = middleRowY + offsetFromMiddle * REEL_ROW_HEIGHT - this.offset;
+      img.y = middleRowY + offsetFromMiddle * REEL_ROW_HEIGHT - this.offset + this.bounceOffset;
     }
   }
 
@@ -91,9 +94,25 @@ export class ReelView {
     this.state = 'STOPPED';
     this.refreshVisuals();
     soundService.playStop();
+    this.playBounce();
     const cb = this.onStoppedCallback;
     this.onStoppedCallback = null;
     cb?.();
+  }
+
+  /** 停止時に少し沈み込んでから戻る、実機の停止衝撃を模したバウンド演出。 */
+  private playBounce(): void {
+    const proxy = { value: 10 };
+    this.scene.tweens.add({
+      targets: proxy,
+      value: 0,
+      duration: 180,
+      ease: 'Bounce.Out',
+      onUpdate: () => {
+        this.bounceOffset = -proxy.value;
+        this.refreshVisuals();
+      },
+    });
   }
 
   reset(): void {

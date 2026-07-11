@@ -47,6 +47,10 @@ export class GameScene extends Phaser.Scene {
   private leverButton!: Button;
   private stopButtons: Button[] = [];
 
+  private reelPanel!: Phaser.GameObjects.Rectangle;
+  private displayedCredit = 0;
+  private creditTween?: Phaser.Tweens.Tween;
+
   private stoppedCount = 0;
   private pendingBonusAtLeverOn = false;
   private busy = false;
@@ -57,7 +61,7 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x0d0714);
-    this.add
+    this.reelPanel = this.add
       .rectangle(GAME_WIDTH / 2, REEL_WINDOW_TOP + (REEL_ROW_HEIGHT * 3) / 2, GAME_WIDTH - 20, REEL_ROW_HEIGHT * 3 + 24, 0x1c1428)
       .setStrokeStyle(4, 0x8a6bb0);
 
@@ -67,6 +71,7 @@ export class GameScene extends Phaser.Scene {
     this.createWinBanner();
     this.createControlPanel();
 
+    this.displayedCredit = gameEngine.credit;
     this.refreshHud();
     this.updateButtonStates();
 
@@ -261,19 +266,19 @@ export class GameScene extends Phaser.Scene {
 
     if (outcome.bonusEntered) {
       soundService.playBonusStart();
-      this.winBanner.setText(`${ROLE_LABEL[outcome.bonusEntered]} 確定！`);
+      this.showBanner(`${ROLE_LABEL[outcome.bonusEntered]} 確定！`);
     } else if (outcome.isReplay) {
-      this.winBanner.setText('REPLAY');
+      this.showBanner('REPLAY');
     } else if (outcome.payout > 0 && outcome.winRole) {
       soundService.playPayout(outcome.payout);
-      this.winBanner.setText(`${ROLE_LABEL[outcome.winRole] ?? outcome.winRole}  +${outcome.payout}枚`);
+      this.showBanner(`${ROLE_LABEL[outcome.winRole] ?? outcome.winRole}  +${outcome.payout}枚`);
     } else {
       this.winBanner.setText('');
     }
 
     if (outcome.bonusFinished) {
       this.time.delayedCall(600, () => {
-        this.winBanner.setText(`${ROLE_LABEL[outcome.bonusFinished as string]} 終了`);
+        this.showBanner(`${ROLE_LABEL[outcome.bonusFinished as string]} 終了`);
       });
     }
 
@@ -283,13 +288,25 @@ export class GameScene extends Phaser.Scene {
       : '',
     );
 
-    this.refreshHud();
+    this.refreshHud(true);
     this.busy = false;
     this.updateButtonStates();
   }
 
-  private refreshHud(): void {
-    this.creditText.setText(`CREDIT ${gameEngine.credit}`);
+  /** 当選バナーをポップイン演出付きで表示する。 */
+  private showBanner(text: string): void {
+    this.winBanner.setText(text);
+    this.winBanner.setScale(0.6).setAlpha(0);
+    this.tweens.add({
+      targets: this.winBanner,
+      scale: 1,
+      alpha: 1,
+      duration: 260,
+      ease: 'Back.Out',
+    });
+  }
+
+  private refreshHud(animateCredit = false): void {
     this.gamesText.setText(`総GAME数 ${gameEngine.totalGames}`);
     this.bigText.setText(`BIG ${gameEngine.bigCount}`);
     this.regText.setText(`REG ${gameEngine.regCount}`);
@@ -297,6 +314,28 @@ export class GameScene extends Phaser.Scene {
     this.betLights.forEach((light, i) => {
       light.setFillStyle(i < gameEngine.bet ? 0xf5c542 : 0x4a3f5c);
     });
+
+    this.creditTween?.stop();
+    if (animateCredit) {
+      const proxy = { value: this.displayedCredit };
+      this.creditTween = this.tweens.add({
+        targets: proxy,
+        value: gameEngine.credit,
+        duration: 450,
+        ease: 'Cubic.easeOut',
+        onUpdate: () => {
+          this.displayedCredit = Math.round(proxy.value);
+          this.creditText.setText(`CREDIT ${this.displayedCredit}`);
+        },
+      });
+    } else {
+      this.displayedCredit = gameEngine.credit;
+      this.creditText.setText(`CREDIT ${this.displayedCredit}`);
+    }
+
+    const accent =
+      gameEngine.mode === 'BONUS_BIG' ? 0xff8a5c : gameEngine.mode === 'BONUS_REG' ? 0x6ec6ff : 0x8a6bb0;
+    this.reelPanel.setStrokeStyle(4, accent);
   }
 
   private updateButtonStates(): void {
