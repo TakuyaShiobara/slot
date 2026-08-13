@@ -5,6 +5,7 @@ import { expToNextLevel } from "@/lib/game/engine";
 import { JOB_DEFS } from "@/lib/game/jobs";
 import { currentDisplayTitle } from "@/lib/game/titles";
 import { findNextLockedSkill } from "@/lib/game/skills";
+import { computeCombatStats, computeEquipmentBonuses } from "@/lib/game/gameStats";
 
 export function useGame() {
   return useGameStore((s) => s.game);
@@ -38,4 +39,12 @@ export function useTodayExp() {
 export function useNextSkillPreview() {
   const game = useGame();
   return findNextLockedSkill(game);
+}
+
+export function useCombatStats() {
+  const character = useCharacter();
+  const equipment = useGameStore((s) => s.game.rpg.equipment);
+  const unlockedSkillIds = useGameStore((s) => s.game.unlockedSkillIds);
+  const equipmentBonus = computeEquipmentBonuses(equipment);
+  return computeCombatStats(character, equipmentBonus, unlockedSkillIds);
 }

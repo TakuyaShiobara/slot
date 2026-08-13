@@ -12,6 +12,9 @@ import { categoryLevelForExp } from "@/lib/game/engine";
 import { deriveJob } from "@/lib/game/jobs";
 import { TITLE_DEFS, isTitleConditionMet } from "@/lib/game/titles";
 import { SKILL_DEFS, isSkillConditionMet } from "@/lib/game/skills";
+import { computeCombatStats, computeEquipmentBonuses, computeVitals } from "@/lib/game/gameStats";
+import { FIELD_MAPS } from "@/lib/game/maps";
+import type { RpgProgress } from "@/lib/data/types";
 
 const DEMO_CHARACTER_ID = "char_takuya";
 const DEMO_USER_ID = "user_demo";
@@ -158,16 +161,18 @@ export function buildInitialGameState(): GameState {
     luk: 19,
   };
 
+  const vitals = computeVitals(27, stats);
+
   const character: Character = {
     id: DEMO_CHARACTER_ID,
     userId: DEMO_USER_ID,
     name: "TAKUYA",
     level: 27,
     exp: 725,
-    hp: 100,
-    hpMax: 100,
-    mp: 60,
-    mpMax: 60,
+    hp: vitals.hpMax,
+    hpMax: vitals.hpMax,
+    mp: vitals.mpMax,
+    mpMax: vitals.mpMax,
     stats,
     jobId: deriveJob(stats, 27),
     currentTitleId: null,
@@ -182,6 +187,35 @@ export function buildInitialGameState(): GameState {
   const experienceLog = buildExperienceLog(activityLog);
   const statHistory = buildStatHistory(stats);
 
+  const equipmentBonus = computeEquipmentBonuses({
+    weapon: "sword_traveler",
+    armor: "leather_armor",
+    shield: "wood_shield",
+    accessory: null,
+  });
+  const combat = computeCombatStats(character, equipmentBonus, []);
+
+  const rpg: RpgProgress = {
+    gold: 40,
+    inventory: [
+      { itemId: "potion", quantity: 3 },
+      { itemId: "magic_potion", quantity: 2 },
+    ],
+    equipment: {
+      weapon: "sword_traveler",
+      armor: "leather_armor",
+      shield: "wood_shield",
+      accessory: null,
+    },
+    position: { mapId: "overworld", x: FIELD_MAPS.overworld.entryPoint.x, y: FIELD_MAPS.overworld.entryPoint.y },
+    hp: combat.maxHp,
+    mp: combat.maxMp,
+    openedChestIds: [],
+    bossDefeated: false,
+    battle: null,
+    fieldMessage: null,
+  };
+
   let state: GameState = {
     character,
     categoryLevels,
@@ -195,6 +229,7 @@ export function buildInitialGameState(): GameState {
     questDate: new Date().toISOString().slice(0, 10),
     weekStartDate: startOfWeek(new Date()).toISOString().slice(0, 10),
     lastRecordedDate: new Date().toISOString().slice(0, 10),
+    rpg,
   };
 
   const unlockedSkillIds = SKILL_DEFS.filter(

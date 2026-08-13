@@ -10,6 +10,7 @@ import { applyExp, expRequiredForLevel, type LevelUpStep } from "@/lib/game/leve
 import { deriveJob } from "@/lib/game/jobs";
 import { checkNewlyUnlockedSkills } from "@/lib/game/skills";
 import { checkNewlyUnlockedTitles } from "@/lib/game/titles";
+import { computeCombatStats, computeEquipmentBonuses, computeVitals } from "@/lib/game/gameStats";
 import type { SkillDef } from "@/lib/data/types";
 import type { TitleDef } from "@/lib/data/types";
 
@@ -54,6 +55,12 @@ export interface RecordActivityInput {
   note?: string;
 }
 
+export interface GameStatDelta {
+  atk: number;
+  def: number;
+  mag: number;
+}
+
 export interface RecordActivityResult {
   state: GameState;
   entry: ActivityLogEntry;
@@ -62,6 +69,7 @@ export interface RecordActivityResult {
   levelUps: LevelUpStep[];
   newSkills: SkillDef[];
   newTitles: TitleDef[];
+  gameStatDelta: GameStatDelta;
 }
 
 /** 行動記録 -> EXP付与 -> レベルアップ/称号/スキル判定までを一括で行う純粋関数 */
@@ -84,6 +92,9 @@ export function recordActivity(state: GameState, input: RecordActivityInput): Re
 
   const newStats = addStats(state.character.stats, statGains);
   const expResult = applyExp(state.character.level, state.character.exp, expGained);
+  const equipmentBonus = computeEquipmentBonuses(state.rpg.equipment);
+  const combatBefore = computeCombatStats(state.character, equipmentBonus, state.unlockedSkillIds);
+  const vitals = computeVitals(expResult.level, newStats);
 
   let streakDays = state.character.streakDays;
   let totalDaysRecorded = state.character.totalDaysRecorded;
@@ -109,10 +120,10 @@ export function recordActivity(state: GameState, input: RecordActivityInput): Re
     ...state.character,
     level: expResult.level,
     exp: expResult.exp,
-    hpMax: 100 + (expResult.level - 1) * 4,
-    mpMax: 60 + (expResult.level - 1) * 3,
-    hp: 100 + (expResult.level - 1) * 4,
-    mp: 60 + (expResult.level - 1) * 3,
+    hpMax: vitals.hpMax,
+    mpMax: vitals.mpMax,
+    hp: vitals.hpMax,
+    mp: vitals.mpMax,
     stats: newStats,
     streakDays,
     totalDaysRecorded,
@@ -143,6 +154,13 @@ export function recordActivity(state: GameState, input: RecordActivityInput): Re
     nextState.character = { ...nextState.character, currentTitleId: newTitles[newTitles.length - 1].id };
   }
 
+  const combatAfter = computeCombatStats(nextState.character, equipmentBonus, nextState.unlockedSkillIds);
+  const gameStatDelta: GameStatDelta = {
+    atk: combatAfter.atk - combatBefore.atk,
+    def: combatAfter.def - combatBefore.def,
+    mag: combatAfter.mag - combatBefore.mag,
+  };
+
   return {
     state: nextState,
     entry,
@@ -151,6 +169,7 @@ export function recordActivity(state: GameState, input: RecordActivityInput): Re
     levelUps: expResult.levelUps,
     newSkills,
     newTitles,
+    gameStatDelta,
   };
 }
 
