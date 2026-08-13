@@ -6,9 +6,12 @@ import { CommandRow } from "@/components/ui/PixelButton";
 import { useCharacter, useCurrentTitle, useJob } from "@/hooks/useGame";
 
 const MENU_ITEMS = [
+  { href: "/quests", icon: "📜", label: "クエスト", sub: "デイリー・ウィークリーの目標" },
   { href: "/journal", icon: "📖", label: "冒険日誌", sub: "過去の行動記録をふりかえる" },
   { href: "/titles", icon: "🏅", label: "称号", sub: "獲得した称号の一覧" },
   { href: "/job", icon: "🛡", label: "職業", sub: "現在の職業とランク" },
+  { href: "/game/equipment", icon: "🗡", label: "そうび", sub: "ゲーム内の装備を管理する" },
+  { href: "/game/items", icon: "🎒", label: "どうぐ", sub: "所持アイテムとゴールド" },
   { href: "/settings", icon: "⚙", label: "設定", sub: "データの管理など" },
 ] as const;
 

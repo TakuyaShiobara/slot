@@ -74,6 +74,15 @@ export function PendingResultModal() {
     number
   ][];
 
+  const delta = pendingResult.gameStatDelta;
+  const gameDeltaEntries: [string, number][] = delta
+    ? ([
+        delta.atk > 0 ? (["ATK", delta.atk] as [string, number]) : null,
+        delta.def > 0 ? (["DEF", delta.def] as [string, number]) : null,
+        delta.mag > 0 ? (["魔法威力", delta.mag] as [string, number]) : null,
+      ].filter(Boolean) as [string, number][])
+    : [];
+
   return (
     <ModalOverlay>
       <div className="rpg-panel p-4 text-center">
@@ -90,6 +99,22 @@ export function PendingResultModal() {
                 {STAT_LABEL_JA[stat]} <span className="text-rpg-exp">+{v}</span>
               </p>
             ))}
+          </div>
+        )}
+        {gameDeltaEntries.length > 0 && (
+          <div className="mt-3 border-t border-rpg-border-dim pt-3">
+            <p className="text-[12px] text-rpg-accent">
+              ゲーム内能力にも
+              <br />
+              変化がありました！
+            </p>
+            <div className="mt-1 flex justify-center gap-4">
+              {gameDeltaEntries.map(([label, v]) => (
+                <span key={label} className="text-[12px] text-rpg-text">
+                  {label} <span className="text-rpg-exp">+{v}</span>
+                </span>
+              ))}
+            </div>
           </div>
         )}
         <div className="mt-5">

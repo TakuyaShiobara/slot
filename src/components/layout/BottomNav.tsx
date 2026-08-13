@@ -8,7 +8,7 @@ const NAV_ITEMS = [
   { href: "/adventure", label: "ぼうけん", icon: "⚔" },
   { href: "/stats", label: "のうりょく", icon: "📊" },
   { href: "/skills", label: "スキル", icon: "✨" },
-  { href: "/quests", label: "クエスト", icon: "📜" },
+  { href: "/game", label: "ゲーム", icon: "🎮" },
   { href: "/menu", label: "メニュー", icon: "≡" },
 ] as const;
 
