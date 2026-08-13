@@ -1,6 +1,9 @@
 const CACHE_NAME = "life-quest-cache-v1";
-const OFFLINE_URL = "/home";
-const PRECACHE_URLS = ["/home", "/icons/icon-192.png", "/icons/icon-512.png"];
+// sw.js自身のURLからスコープ(GitHub Pagesなら/slot/など)を逆算し、
+// basePathをビルド時に埋め込まなくても正しいパスでキャッシュできるようにする。
+const BASE = new URL(".", self.location.href).pathname;
+const OFFLINE_URL = `${BASE}home/`;
+const PRECACHE_URLS = [OFFLINE_URL, `${BASE}icons/icon-192.png`, `${BASE}icons/icon-512.png`];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

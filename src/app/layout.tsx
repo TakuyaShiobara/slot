@@ -18,10 +18,12 @@ const pressStart = Press_Start_2P({
   display: "swap",
 });
 
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 export const metadata: Metadata = {
   title: "人生クエスト",
   description: "日々の行動が経験値になる、レトロRPG風ライフログPWA",
-  manifest: "/manifest.webmanifest",
+  manifest: `${basePath}/manifest.webmanifest`,
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
